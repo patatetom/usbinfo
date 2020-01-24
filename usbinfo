@@ -22,9 +22,8 @@ registry=$( mktemp )
 registry=${registry:?$'\r'Error with temporay file$'\033[K'}
 trap "rm -f $registry" EXIT
 egrep -i '/('$ControlSet'/Enum|MountedDevices)/' "$1" > $registry
-# encoding correction and replacement of / in some nodes's name (DVD+/-RW)
+# encoding correction
 sed	-i\
-	-e 's;+/-;±;g'\
 	-e 's/<E0>/à/g'\
 	-e 's/<E9>/é/g'\
 	$registry
