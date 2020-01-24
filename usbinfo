@@ -1,0 +1,141 @@
+#!/bin/bash
+# regdump -t SYSTEM > SYSTEM.dump && usbinfo SYSTEM.dump
+# https://github.com/adoxa/regdump
+
+
+registry=${1:?$'\r'SYSTEM registry dump needed$'\033[K'}
+exit_error() { [ "${2:-}" ] && echo $2 > /dev/stderr; exit ${1:-1}; }
+get_value() { read stdin; echo ${stdin##*=}; }
+#dump() { [ "$1" ] && echo "$@" >/dev/stderr; }
+
+
+# get Current ControlSet
+read Current _ < <( grep -i '/Select/Current ' $registry | get_value )
+[ "$Current" ] || exit_error 1 "Current ControlSet not found"
+Current=000$((Current))
+ControlSet=ControlSet${Current: -3}
+#dump $ControlSet
+
+
+# removing unused nodes
+registry=$( mktemp )
+registry=${registry:?$'\r'Error with temporay file$'\033[K'}
+trap "rm -f $registry" EXIT
+egrep -i '/('$ControlSet'/Enum|MountedDevices)/' "$1" > $registry
+# encoding correction and replacement of / in some nodes's name (DVD+/-RW)
+sed	-i\
+	-e 's;+/-;±;g'\
+	-e 's/<E0>/à/g'\
+	-e 's/<E9>/é/g'\
+	$registry
+
+
+# USB storage
+last=0
+while read -r Ymd Hms UsbStorage
+do
+	Ymd=${Ymd:1}
+	Hms=${Hms::-1}
+	current=$( date --date="$Ymd $Hms" +%s )
+	# display if more than 20 seconds elapse (first is negative)
+	if (( (current-last)>20 ))
+	then
+		StorageDeviceDesc=$( grep "$UsbStorage/" $registry | grep -im1 '/DeviceDesc ' | get_value )
+		StorageFriendlyName=$( grep "$UsbStorage/" $registry | grep -im1 '/FriendlyName ' | get_value )
+
+		DiskId=$( grep "$UsbStorage/" $registry | grep -im1 '/DiskId ' | get_value )
+		VolumeDeviceDesc=$( egrep -i "/(Volume|WPDBUSENUM)/$DiskId" $registry | grep -im1 '/DeviceDesc ' | get_value )
+		VolumeFriendlyName=$( egrep -i "/(Volume|WPDBUSENUM)/$DiskId" $registry | grep -im1 '/FriendlyName ' | get_value )
+
+		StorageDeviceDesc=${StorageDeviceDesc##*;}
+		VolumeDeviceDesc=${VolumeDeviceDesc##*;}
+
+		Serial=${UsbStorage##*/}
+
+		UsbStorage=${UsbStorage%/*}
+		UsbStorage=${UsbStorage##*/}
+		UsbStorage=${UsbStorage%&Rev_*}
+
+		shopt -s nocasematch
+		[[ "$UsbStorage" =~ Ven_.*\&Prod_ ]]\
+			&& UsbStorage=${UsbStorage//&/ }\
+			&& UsbStorage=${UsbStorage//Ven_/}\
+			&& UsbStorage=${UsbStorage//Prod_/}
+		shopt -u nocasematch
+
+		echo	$Ymd$'\t'\
+			$Hms$'\t'\
+			${UsbStorage#/*/}$'\t'\
+			$Serial$'\t'\
+			${StorageDeviceDesc:--}$'\t'\
+			${StorageFriendlyName:--}$'\t'\
+			${VolumeDeviceDesc:--}$'\t'\
+			${VolumeFriendlyName:--}
+	fi
+	last=$current
+done < <( egrep -io '^.*/'$ControlSet'/Enum/USBSTOR/[^/]+/[^/]+' $registry | sort -ru )
+
+
+# Mounted devices
+while read -r Ymd Hms MountedDevice Extra
+do
+	Ymd=${Ymd:1}
+	Hms=${Hms::-1}
+
+	Extra=${Extra##*= }
+	Extra=${Extra#*#}
+	Extra=${Extra%#{*}
+	Extra=${Extra/??,??,??,??,??,??,??,??,??,??,??,??/}
+	Extra=${Extra/,??,??,??,??,??,??,??,??,??,??,??,??/}
+
+	MountedDevice=${MountedDevice#*\\}
+	MountedDevice=${MountedDevice//\\/ }
+
+	Serial=${Extra##*#}
+	[ "$Serial" != "$Extra" ]\
+		&& Extra=$( grep -im1 "/$Serial/DeviceDesc " $registry | get_value )
+
+	echo	$Ymd$'\t'\
+		$Hms$'\t'\
+		$MountedDevice$'\t'\
+		${Extra##*;}
+done < <( grep -i '/MountedDevices/' $registry | grep -i DosDevices | sort -u )
+
+
+# USB Vid Pid
+last=0
+while read -r Ymd Hms VidPidSerial
+do
+	Ymd=${Ymd:1}
+	Hms=${Hms::-1}
+	current=$( date --date="$Ymd $Hms" +%s )
+	# display if more than 20 seconds elapse (first is negative)
+	if (( (current-last)>20 ))
+	then
+		Extra=$( grep "$VidPidSerial/" $registry | grep -m1 '}/0004' | get_value )
+
+		DeviceDesc=$( grep "$VidPidSerial/" $registry | grep -im1 '/DeviceDesc ' | get_value )
+		DeviceDesc=${DeviceDesc##*;}
+
+		Serial=${VidPidSerial##*/}
+
+		VidPidSerial=${VidPidSerial%/*}
+		VidPidSerial=${VidPidSerial##*/}
+
+		shopt -s nocasematch
+		[[ "$VidPidSerial" =~ VID_....\&PID_.... ]]\
+			&& VidPidSerial=${VidPidSerial//&/ }\
+			&& VidPidSerial=${VidPidSerial//VID_/VId: }\
+			&& VidPidSerial=${VidPidSerial//PID_/PId: }
+		shopt -u nocasematch
+
+		echo	$Ymd$'\t'\
+			$Hms$'\t'\
+			$VidPidSerial$'\t'\
+			$Serial$'\t'\
+			$DeviceDesc$'\t'\
+			${Extra:--}
+	fi
+	last=$current
+done < <( egrep -io '^.*/'$ControlSet'/Enum/USB/VID_....&PID_..../[^/]+' $registry | sort -u )
+
