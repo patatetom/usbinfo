@@ -63,13 +63,13 @@ do
 		shopt -u nocasematch
 
 		echo	$Ymd$'\t'\
-			$Hms$'\t'\
-			${UsbStorage#/*/}$'\t'\
-			$Serial$'\t'\
-			${StorageDeviceDesc:--}$'\t'\
-			${StorageFriendlyName:--}$'\t'\
-			${VolumeDeviceDesc:--}$'\t'\
-			${VolumeFriendlyName:--}
+$Hms$'\t'\
+${UsbStorage#/*/}$'\t'\
+$Serial$'\t'\
+${StorageDeviceDesc:--}$'\t'\
+${StorageFriendlyName:--}$'\t'\
+${VolumeDeviceDesc:--}$'\t'\
+${VolumeFriendlyName:--}
 	fi
 	last=$current
 done < <( egrep -io '^.*/'$ControlSet'/Enum/USBSTOR/[^/]+/[^/]+' $registry | sort -ru )
@@ -95,9 +95,9 @@ do
 		&& Extra=$( grep -im1 "/$Serial/DeviceDesc " $registry | get_value )
 
 	echo	$Ymd$'\t'\
-		$Hms$'\t'\
-		$MountedDevice$'\t'\
-		${Extra##*;}
+$Hms$'\t'\
+$MountedDevice$'\t'\
+${Extra##*;}
 done < <( grep -i '/MountedDevices/' $registry | grep -i DosDevices | sort -u )
 
 
@@ -129,11 +129,11 @@ do
 		shopt -u nocasematch
 
 		echo	$Ymd$'\t'\
-			$Hms$'\t'\
-			$VidPidSerial$'\t'\
-			$Serial$'\t'\
-			$DeviceDesc$'\t'\
-			${Extra:--}
+$Hms$'\t'\
+$VidPidSerial$'\t'\
+$Serial$'\t'\
+$DeviceDesc$'\t'\
+${Extra:--}
 	fi
 	last=$current
 done < <( egrep -io '^.*/'$ControlSet'/Enum/USB/VID_....&PID_..../[^/]+' $registry | sort -u )
