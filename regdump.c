@@ -173,7 +173,9 @@ char* make_name( char* out, char* in, int len, int comp )
     unsigned char* uc = (unsigned char*)in;
     for (i = 0; i < len; ++uc, ++i)
     {
-      if (*uc >= 32 && *uc < 127)
+      if (*uc == '/')
+	out += sprintf( out, "\xe2\x81\x84" );
+      else if (*uc >= 32 && *uc < 127)
 	*out++ = *uc;
       else
 	out += sprintf( out, "<%02X>", *uc );
@@ -184,7 +186,9 @@ char* make_name( char* out, char* in, int len, int comp )
     unsigned short* us = (unsigned short*)in;
     for (i = 0; i < len / 2; ++us, ++i)
     {
-      if (*us >= 32 && *us < 127)
+      if (*us == '/')
+	out += sprintf( out, "\xe2\x81\x84" );
+      else if (*us >= 32 && *us < 127)
 	*out++ = (char)*us;
       else
 	out += sprintf( out, "<%0*X>", (*us < 0x100) ? 2 : 4, *us );
