@@ -41,36 +41,38 @@ do
 	if (( (current-last)>20 ))
 	then
 		StorageDeviceDesc=$( grep "$UsbStorage/" $registry | grep -im1 '/DeviceDesc ' | get_value )
+		StorageDeviceDesc=${StorageDeviceDesc##*;}
 		StorageFriendlyName=$( grep "$UsbStorage/" $registry | grep -im1 '/FriendlyName ' | get_value )
 
-		DiskId=$( grep "$UsbStorage/" $registry | grep -im1 '/DiskId ' | get_value )
-		VolumeDeviceDesc=$( egrep -i "/(Volume|WPDBUSENUM)/$DiskId" $registry | grep -im1 '/DeviceDesc ' | get_value )
-		VolumeFriendlyName=$( egrep -i "/(Volume|WPDBUSENUM)/$DiskId" $registry | grep -im1 '/FriendlyName ' | get_value )
-
-		StorageDeviceDesc=${StorageDeviceDesc##*;}
-		VolumeDeviceDesc=${VolumeDeviceDesc##*;}
-
 		Serial=${UsbStorage##*/}
+
+		VolumeDeviceDesc=$( grep "#$Serial#" $registry | grep -i '/WPDBUSENUM/' | grep -im1 '/DeviceDesc ' | get_value )
+		[ "$VolumeDeviceDesc" ]\
+			|| VolumeDeviceDesc=$( grep "#$Serial#" $registry | grep -i '/Volume/' | grep -im1 '/DeviceDesc ' | get_value )
+		VolumeDeviceDesc=${VolumeDeviceDesc##*;}
+		VolumeFriendlyName=$( grep "#$Serial#" $registry | grep -i '/WPDBUSENUM/' | grep -im1 '/FriendlyName ' | get_value )
+		[ "$VolumeFriendlyName" ]\
+			|| VolumeFriendlyName=$( grep "#$Serial#" $registry | grep -i '/Volume/' | grep -im1 '/FriendlyName ' | get_value )
+
+		DosDevice=$( grep "#$Serial#" $registry | grep -io '/MountedDevices/\\DosDevices\\[A-Z]:' )
+		DosDevice=${DosDevice: -2}
 
 		UsbStorage=${UsbStorage%/*}
 		UsbStorage=${UsbStorage##*/}
 		UsbStorage=${UsbStorage%&Rev_*}
-
-		shopt -s nocasematch
-		[[ "$UsbStorage" =~ Ven_.*\&Prod_ ]]\
-			&& UsbStorage=${UsbStorage//&/ }\
-			&& UsbStorage=${UsbStorage//Ven_/}\
-			&& UsbStorage=${UsbStorage//Prod_/}
-		shopt -u nocasematch
+		UsbStorage=${UsbStorage//&/ }
+		UsbStorage=${UsbStorage//Ven_/}
+		UsbStorage=${UsbStorage//Prod_/}
 
 		echo	$Ymd$'\t'\
 $Hms$'\t'\
-${UsbStorage#/*/}$'\t'\
+${UsbStorage}$'\t'\
 $Serial$'\t'\
 ${StorageDeviceDesc:--}$'\t'\
 ${StorageFriendlyName:--}$'\t'\
 ${VolumeDeviceDesc:--}$'\t'\
-${VolumeFriendlyName:--}
+${VolumeFriendlyName:--}$'\t'\
+${DosDevice:--}
 	fi
 	last=$current
 done < <( egrep -io '^.*/'$ControlSet'/Enum/USBSTOR/[^/]+/[^/]+' $registry | sort -ru )
