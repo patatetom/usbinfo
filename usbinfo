@@ -3,30 +3,31 @@
 # https://github.com/adoxa/regdump
 
 
-registry=${1:?$'\r'SYSTEM registry dump needed$'\033[K'}
 exit_error() { [ "${2:-}" ] && echo $2 > /dev/stderr; exit ${1:-1}; }
 get_value() { read stdin; echo ${stdin##*=}; }
 #dump() { [ "$1" ] && echo "$@" >/dev/stderr; }
 
 
-# get Current ControlSet
+registry=${1:?$'\r'SYSTEM registry dump needed$'\033[K'}
+[ -s "$registry" ] || exit_error 1 "Non-existent or empty registry dump"
+
+
+# Current ControlSet
 read Current _ < <( grep -i '/Select/Current ' $registry | get_value )
-[ "$Current" ] || exit_error 1 "Current ControlSet not found"
+[ "$Current" ] && [ $((Current)) -gt 0 ] || Current=1
 Current=000$((Current))
 ControlSet=ControlSet${Current: -3}
 #dump $ControlSet
 
 
-# removing unused nodes
+# node reduction
 registry=$( mktemp )
 registry=${registry:?$'\r'Error with temporay file$'\033[K'}
 trap "rm -f $registry" EXIT
-egrep -i '/('$ControlSet'/Enum|MountedDevices)/' "$1" > $registry
+egrep -i '^\[.+/('$ControlSet'/Enum|MountedDevices)/.+ = .+' "$1" > $registry
+[ -s $registry ] || exit_error 1 "Searched nodes not found"
 # encoding correction
-sed	-i\
-	-e 's/<E0>/à/g'\
-	-e 's/<E9>/é/g'\
-	$registry
+sed	-i -e 's/<E0>/à/g' -e 's/<E9>/é/g' $registry
 
 
 # USB storage
