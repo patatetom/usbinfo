@@ -4,7 +4,7 @@
 
 
 exit_error() { [ "${2:-}" ] && echo $2 > /dev/stderr; exit ${1:-1}; }
-get_value() { read stdin; echo ${stdin##*=}; }
+get_value() { read stdin; echo ${stdin##* = }; }
 #dump() { [ "$1" ] && echo "$@" >/dev/stderr; }
 
 
@@ -43,7 +43,7 @@ do
 
 	FriendlyName=$( grep -im1 "$UsbStorage/FriendlyName" $registry )
 	LastTime=${FriendlyName:1:19}
-	FriendlyName=${FriendlyName##* = }
+	FriendlyName=$( get_value <<< "$FriendlyName" )
 	
 	DosDevice=$( grep -i "/MountedDevices/" $registry | grep "$Serial" | grep -o 'DosDevices\\.:')
 	DosDevice=${DosDevice: -2}
@@ -51,9 +51,9 @@ do
 	UsbStorage=${UsbStorage%/*}
 	UsbStorage=${UsbStorage##*/}
 	UsbStorage=${UsbStorage%&Rev_*}
-#	UsbStorage=${UsbStorage//&/ }
-#	UsbStorage=${UsbStorage//Ven_/}
-#	UsbStorage=${UsbStorage//Prod_/}
+	UsbStorage=${UsbStorage//&/ }
+	UsbStorage=${UsbStorage//Ven_/}
+	UsbStorage=${UsbStorage//Prod_/}
 
 	echo $LastTime\
 $'\t'$UsbStorage\
