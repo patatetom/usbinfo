@@ -64,7 +64,6 @@ $'\t'$FriendlyName\
 $'\t'$DosDevice
 
 done < <( egrep -o 'ControlSet001/Enum/USBSTOR/[^/]+/[^/]+' $registry | sort -u )
-exit
 
 
 # Mounted devices
