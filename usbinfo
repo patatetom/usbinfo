@@ -7,6 +7,9 @@ exit_error() { [ "${2:-}" ] && echo $2 > /dev/stderr; exit ${1:-1}; }
 get_value() { read stdin; echo ${stdin##* = }; }
 
 
+#ids=/var/lib/usbutils/usb.ids	# on Debian, provided by package "usb.ids"
+#ids=/usr/share/hwdata/usb.ids	# on Arch, provided by package "hwids"
+[ -s "${ids:?$'\r'File usb.ids not defined$'\033[K'}" ] || exit_error 1 "Bad usb.ids file"
 registry=${1:?$'\r'SYSTEM registry dump needed$'\033[K'}
 [ -s "$registry" ] || exit_error 1 "Non-existent or empty registry dump"
 
@@ -66,6 +69,17 @@ done < <( egrep -o "$ControlSet/Enum/USBSTOR/[^/]+/[^/]+" $registry | sort -u )
 
 
 # USB Vid Pid
+Vid_Pid()
+{
+	VidPidsList=$( egrep ^$'\t''?[0-9a-f]{4} ' "$ids" | grep -iA100000 ^$1 | grep -B100000 -m2 '^[^'$'\t'']' | head -n -1 )
+	[ ! "$VidPidsList" ] && echo "VendorId $1 - ProductId $2" && return
+	Vendor=${VidPidsList%%$'\n'$'\t'*}
+	Vendor=${Vendor:4}
+	Product=$( grep -im1 ^$'\t'$2 <<<"$VidPidsList" )
+	[ ! "$Product" ] && echo ${Vendor} - ProductId $2 && return
+	Product=${Product:5}
+	echo $Vendor - $Product
+}
 while read VidPid
 do
 
@@ -83,10 +97,11 @@ FriendlyName=$( grep -m1 "$VidPid/FriendlyName" $registry | get_value )
 
 VidPid=${VidPid%/*}
 VidPid=${VidPid##*/}
-VidPid=${VidPid%&MI_*}
-VidPid=${VidPid//&/ }
-VidPid=${VidPid/VID_/VId }
-VidPid=${VidPid/PID_/PId }
+
+Vid=${VidPid:4:4}
+Pid=${VidPid:13:4}
+
+VidPid=$( Vid_Pid $Vid $Pid )
 
 echo $LastTime\
 $'\t'$VidPid\
