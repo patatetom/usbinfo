@@ -28,7 +28,7 @@ trap "rm -f $registry" EXIT
 egrep '^\[.+/('$ControlSet'/Enum|MountedDevices)/.+ = .+' "$1" > $registry
 [ -s $registry ] || exit_error 1 "Searched nodes not found"
 # encoding correction (fr)
-sed -i -e 's/<E0>/à/g' -e 's/<E9>/é/g' $registry
+sed -i -e 's/<E0>/à/g' -e 's/<E9>/é/g' -e "s/<2019>/'/g" $registry
 
 
 # USB storage
