@@ -31,7 +31,17 @@ egrep '^\[.+/('$ControlSet'/Enum|MountedDevices)/.+ = .+' "$1" > $registry
 sed -i -e 's/<E0>/à/g' -e 's/<E9>/é/g' -e "s/<2019>/'/g" $registry
 
 
-# USB storage
+# newest oldest times
+Newest=$( sort "$1" | ( head -1 && tail -1 ))
+Oldest=${Newest%$'\n'*}
+Oldest=${Oldest:1:19}
+echo $Oldest$'\t'---- Begin -----
+Newest=${Newest#*$'\n'}
+Newest=${Newest:1:19}
+echo $Newest$'\t'---- End -----
+
+
+# USB storage# USB storage
 while read UsbStorage
 do
 
