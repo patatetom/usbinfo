@@ -47,6 +47,7 @@ parse the dump :
 $ # fields are last time, title, serial number, first time, device description and friendly name
 $ # fields are separated by one tab \t character
 $ usbinfo /tmp/SYSTEM.dump | sort -r | grep ^2020-
+2020-01-21 16:19:47	---- End -----
 2020-01-21 16:19:27	VendorId 46F4 - ProductId 0001	1-0000:00:03.0-2	2020-01-21 16:07:12	USB Mass Storage Device
 2020-01-21 16:07:12	Disk QEMU QEMU_HARDDISK	1-0000:00:03.0-2&0	2020-01-21 16:07:12	Disk drive	QEMU QEMU HARDDISK USB Device
 2020-01-21 16:04:55	Adomax Technology Co., Ltd - ProductId 0001	28754-0000:00:03.0-1	2020-01-21 15:02:00	USB Input Device
