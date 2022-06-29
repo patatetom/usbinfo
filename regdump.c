@@ -219,7 +219,7 @@ void print_time( int64_t t, BOOL full, BOOL brackets )
 #else
   // Translate 100-nanosecond intervals from 1601 to seconds from 1970.
   secs = (time_t)(t / 10000000) - 11644473600;
-  lt = localtime( &secs );
+  lt = gmtime( &secs );
   printf( "%d-%02d-%02d %02d:%02d:%02d",
 	  lt->tm_year+1900, lt->tm_mon+1, lt->tm_mday,
 	  lt->tm_hour, lt->tm_min, lt->tm_sec );
